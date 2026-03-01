@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MACRO/CTA FUND RADAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0b0d;--bg2:#0f1114;--bg3:#14171c;--border:#1e2229;--border2:#252b34;
+    --accent:#00d4a8;--accent2:#0088ff;--warn:#f5a623;--danger:#e05252;
+    --text:#c8cdd6;--text2:#6b737f;--text3:#3e444d;
+    --green:#2ecc71;--red:#e74c3c;
+    --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+
+  /* HEADER */
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100;}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-mark{width:28px;height:28px;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:11px;font-weight:600;letter-spacing:-0.5px;}
+  .logo-text{font-size:11px;font-weight:500;letter-spacing:3px;color:#fff;text-transform:uppercase;}
+  .logo-sub{font-size:9px;color:var(--text2);letter-spacing:2px;margin-top:2px;}
+  .header-right{display:flex;align-items:center;gap:20px;}
+  .live-indicator{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);letter-spacing:1px;}
+  .live-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,212,168,.4);}50%{opacity:.6;box-shadow:0 0 0 4px rgba(0,212,168,0);}}
+  .last-updated{font-size:10px;color:var(--text3);}
+  .refresh-btn{background:none;border:1px solid var(--border2);color:var(--text2);padding:5px 12px;font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
+  .refresh-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .refresh-btn.loading{opacity:.5;pointer-events:none;}
+
+  /* STATS */
+  .stats-bar{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border);}
+  .stat{padding:16px 24px;border-right:1px solid var(--border);}
+  .stat:last-child{border-right:none;}
+  .stat-label{font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+  .stat-value{font-size:22px;font-weight:600;color:#fff;letter-spacing:-1px;}
+  .stat-value.accent{color:var(--accent);}
+  .stat-value.warn{color:var(--warn);}
+  .stat-change{font-size:9px;color:var(--text2);margin-top:3px;}
+  .stat-change.up{color:var(--green);}
+
+  /* SOURCE STATUS */
+  .source-status{display:flex;border-bottom:1px solid var(--border);background:var(--bg);}
+  .source-item{display:flex;align-items:center;gap:8px;padding:8px 20px;border-right:1px solid var(--border);font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+  .source-dot{width:5px;height:5px;border-radius:50%;}
+  .source-dot.ok{background:var(--green);}
+  .source-dot.loading{background:var(--warn);animation:pulse 1s ease infinite;}
+  .source-dot.error{background:var(--red);}
+  .source-item-label{color:var(--text3);}
+  .source-item-status{color:var(--text2);}
+
+  /* LAYOUT */
+  .main{display:grid;grid-template-columns:1fr 320px;min-height:calc(100vh - 140px);}
+  .left-panel{border-right:1px solid var(--border);}
+  .right-panel{background:var(--bg2);}
+
+  /* FILTER */
+  .filter-bar{display:flex;align-items:center;border-bottom:1px solid var(--border);background:var(--bg2);}
+  .filter-label{font-size:9px;color:var(--text3);letter-spacing:2px;padding:12px 16px;border-right:1px solid var(--border);text-transform:uppercase;white-space:nowrap;}
+  .filter-btn{background:none;border:none;border-right:1px solid var(--border);color:var(--text2);padding:12px 16px;font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
+  .filter-btn:hover{color:var(--text);background:var(--bg3);}
+  .filter-btn.active{color:var(--accent);background:rgba(0,212,168,.05);}
+  .filter-spacer{flex:1;}
+  .search-wrap{position:relative;padding:8px 16px;}
+  .search-input{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:6px 10px 6px 28px;font-family:var(--mono);font-size:11px;width:200px;outline:none;transition:border-color .15s;}
+  .search-input::placeholder{color:var(--text3);}
+  .search-input:focus{border-color:var(--accent);}
+  .search-icon{position:absolute;left:26px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:11px;}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:var(--bg2);border-bottom:1px solid var(--border);}
+  th{padding:10px 16px;text-align:left;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;font-weight:400;white-space:nowrap;cursor:pointer;user-select:none;}
+  th:hover{color:var(--text2);}
+  th.sort-asc::after{content:' ↑';color:var(--accent);}
+  th.sort-desc::after{content:' ↓';color:var(--accent);}
+  tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;animation:fadeIn .3s ease forwards;opacity:0;}
+  @keyframes fadeIn{to{opacity:1;}}
+  tbody tr:hover{background:rgba(255,255,255,.02);}
+  tbody tr.selected{background:rgba(0,212,168,.04);border-left:2px solid var(--accent);}
+  td{padding:12px 16px;font-size:11px;vertical-align:middle;}
+  .fund-name{font-weight:500;color:#fff;font-size:12px;}
+  .fund-source{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px;text-transform:uppercase;}
+  .badge{display:inline-block;padding:2px 7px;font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:500;}
+  .badge-cta{background:rgba(0,136,255,.15);color:var(--accent2);}
+  .badge-macro{background:rgba(0,212,168,.12);color:var(--accent);}
+  .badge-systematic{background:rgba(245,166,35,.12);color:var(--warn);}
+  .badge-discretionary{background:rgba(224,82,82,.12);color:var(--danger);}
+  .badge-multi{background:rgba(150,150,200,.12);color:#a0a0cc;}
+  .badge-merger-arb{background:rgba(180,100,220,.12);color:#c47ae0;}
+  .badge-commodity{background:rgba(220,160,50,.12);color:#dca032;}
+  .aum-value{font-weight:500;color:#fff;letter-spacing:-.5px;}
+  .aum-na{color:var(--text3);}
+  .perf-pos{color:var(--green);font-weight:500;}
+  .perf-neg{color:var(--red);font-weight:500;}
+  .perf-na{color:var(--text3);}
+  .source-tag{font-size:9px;padding:2px 6px;letter-spacing:1px;border:1px solid;text-transform:uppercase;}
+  .source-edgar{border-color:rgba(0,136,255,.3);color:var(--accent2);}
+  .source-nfa{border-color:rgba(0,212,168,.3);color:var(--accent);}
+  .source-news{border-color:rgba(245,166,35,.3);color:var(--warn);}
+  .date-cell{color:var(--text2);letter-spacing:.5px;}
+  .new-badge{display:inline-block;background:var(--accent);color:#000;font-size:8px;padding:1px 5px;letter-spacing:1px;font-weight:600;margin-left:6px;vertical-align:middle;animation:blink 1.5s ease-in-out 3;}
+  @keyframes blink{50%{opacity:.4;}}
+  .loading-row td{padding:40px 16px;text-align:center;color:var(--text3);font-size:11px;letter-spacing:1px;}
+  .spinner{display:inline-block;width:12px;height:12px;border:1.5px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* DETAIL PANEL */
+  .panel-header{padding:14px 20px;border-bottom:1px solid var(--border);font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;}
+  .detail-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:11px;line-height:1.8;}
+  .detail-empty .hint{font-size:9px;letter-spacing:1px;margin-top:8px;text-transform:uppercase;}
+  .detail-fund-name{padding:20px 20px 4px;font-size:15px;font-weight:600;color:#fff;letter-spacing:-.5px;}
+  .detail-meta{padding:0 20px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+  .detail-section{padding:16px 20px;border-bottom:1px solid var(--border);}
+  .detail-section-title{font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+  .detail-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px;}
+  .detail-key{font-size:10px;color:var(--text2);letter-spacing:.5px;flex-shrink:0;}
+  .detail-val{font-size:11px;color:var(--text);text-align:right;}
+  .detail-val.highlight{color:#fff;font-weight:500;}
+  .detail-val.green{color:var(--green);}
+  .detail-val.red{color:var(--red);}
+  .detail-val.accent{color:var(--accent);}
+  .action-btns{padding:16px 20px;display:flex;flex-direction:column;gap:8px;}
+  .action-btn{background:none;border:1px solid var(--border2);color:var(--text2);padding:8px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;cursor:pointer;transition:all .15s;text-transform:uppercase;text-align:left;width:100%;}
+  .action-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .action-btn.primary{border-color:var(--accent);color:var(--accent);}
+  .action-btn.primary:hover{background:rgba(0,212,168,.08);}
+
+  /* NEWS FEED */
+  .feed-title{padding:14px 20px;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .feed-count{background:var(--accent);color:#000;font-size:8px;padding:1px 5px;font-weight:600;}
+  .feed-item{padding:12px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+  .feed-item:hover{background:rgba(255,255,255,.02);}
+  .feed-item-header{display:flex;justify-content:space-between;margin-bottom:4px;}
+  .feed-source{font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+  .feed-time{font-size:9px;color:var(--text3);}
+  .feed-headline{font-size:11px;color:var(--text);line-height:1.5;}
+  .feed-tag{font-size:9px;color:var(--accent);margin-top:4px;letter-spacing:.5px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--accent);color:var(--accent);padding:12px 20px;font-size:11px;letter-spacing:.5px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .3s ease;}
+  .toast.show{transform:translateY(0);opacity:1;}
+
+  /* API WARNING BANNER */
+  .api-banner{background:rgba(245,166,35,.08);border-bottom:1px solid rgba(245,166,35,.2);padding:8px 24px;font-size:10px;color:var(--warn);letter-spacing:.5px;display:none;}
+  .api-banner.show{display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">M/C</div>
+    <div>
+      <div class="logo-text">Fund Radar</div>
+      <div class="logo-sub">Macro · CTA · Emerging Managers</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-indicator"><div class="live-dot"></div><span>LIVE</span></div>
+    <div class="last-updated" id="lastUpdated">—</div>
+    <button class="refresh-btn" id="refreshBtn" onclick="triggerRefresh()">↻ REFRESH</button>
+  </div>
+</header>
+
+<div class="api-banner" id="apiBanner">
+  ⚠ Backend not detected at localhost:5000 — showing seed data. Start the server with: <strong>python app.py</strong>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-label">Total Detected</div><div class="stat-value" id="statTotal">—</div><div class="stat-change">across all sources</div></div>
+  <div class="stat"><div class="stat-label">New (7 days)</div><div class="stat-value accent" id="statNew">—</div><div class="stat-change up" id="statNewSub">recent filings</div></div>
+  <div class="stat"><div class="stat-label">EDGAR Filings</div><div class="stat-value" id="statEdgar">—</div><div class="stat-change">Form ADV / RIA</div></div>
+  <div class="stat"><div class="stat-label">NFA Registered</div><div class="stat-value" id="statNfa">—</div><div class="stat-change">CPO / CTA</div></div>
+  <div class="stat"><div class="stat-label">News Signals</div><div class="stat-value warn" id="statNews">—</div><div class="stat-change">press mentions</div></div>
+</div>
+
+<div class="source-status">
+  <div class="source-item"><div class="source-dot loading" id="dotEdgar"></div><span class="source-item-label">SEC EDGAR</span><span class="source-item-status" id="statusEdgar">—</span></div>
+  <div class="source-item"><div class="source-dot loading" id="dotNfa"></div><span class="source-item-label">NFA BASIC</span><span class="source-item-status" id="statusNfa">—</span></div>
+  <div class="source-item"><div class="source-dot loading" id="dotNews"></div><span class="source-item-label">NEWS MONITOR</span><span class="source-item-status" id="statusNews">—</span></div>
+  <div style="flex:1"></div>
+  <div class="source-item" style="border-right:none;border-left:1px solid var(--border)"><span class="source-item-label">FILTER</span><span class="source-item-status">Macro/CTA · $500M–$2B · 2022–present</span></div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+    <div class="filter-bar">
+      <span class="filter-label">STRATEGY</span>
+      <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+      <button class="filter-btn" onclick="setFilter('macro',this)">MACRO</button>
+      <button class="filter-btn" onclick="setFilter('cta',this)">CTA</button>
+      <button class="filter-btn" onclick="setFilter('systematic',this)">SYSTEMATIC</button>
+      <button class="filter-btn" onclick="setFilter('merger-arb',this)">MERGER ARB</button>
+      <button class="filter-btn" onclick="setFilter('commodity',this)">COMMODITY</button>
+      <div class="filter-spacer"></div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input class="search-input" type="text" placeholder="Search funds..." id="searchInput" oninput="renderTable()">
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('name',this)">Fund Name</th>
+          <th onclick="sortBy('strategy',this)">Strategy</th>
+          <th onclick="sortBy('aum',this)">AUM</th>
+          <th onclick="sortBy('perf',this)">Perf. (ITD)</th>
+          <th onclick="sortBy('date',this)">Reg. Date</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr class="loading-row"><td colspan="6"><span class="spinner"></span>CONNECTING TO BACKEND...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="right-panel">
+    <div id="detailPane">
+      <div class="panel-header">FUND DETAIL</div>
+      <div class="detail-empty"><div>SELECT A FUND</div><div class="hint">Click any row to view details</div></div>
+    </div>
+    <div id="newsFeed">
+      <div class="feed-title">SIGNAL FEED <span class="feed-count" id="feedCount">0</span></div>
+      <div id="feedItems"><div style="padding:20px;text-align:center;color:var(--text3);font-size:11px;">LOADING...</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : '';  // same-origin when deployed
+
+let allFunds = [], newsItems = [];
+let currentFilter = 'all', sortCol = 'date', sortDir = 'desc', selectedFund = null;
+
+// ── Seed fallback (shown if backend unreachable) ───────────────────────────────
+const SEED_FUNDS = [
+  {id:"seed-1",name:"Tekmerion Capital Management",strategy:"systematic",aum:1000,perf:18.2,date:"2025-02-01",source:"news",founders:"Zachary Squire, Reed Morrissey",prior:"D.E. Shaw, Bridgewater → Brevan Howard spin-out"},
+  {id:"seed-2",name:"Agave Capital Management",strategy:"macro",aum:1000,perf:null,date:"2025-07-01",source:"news",founders:"Gilberto Marcheggiano",prior:"Citadel, Goldman Sachs, Bank of England"},
+  {id:"seed-3",name:"Deem Global",strategy:"macro",aum:1000,perf:14.3,date:"2022-06-01",source:"edgar",founders:"Asfandyar Nadeem",prior:"Brevan Howard"},
+  {id:"seed-4",name:"Kate Capital",strategy:"macro",aum:null,perf:null,date:"2024-10-01",source:"news",founders:"Paul Podolsky",prior:"Bridgewater Associates"},
+  {id:"seed-5",name:"Verdad Capital",strategy:"macro",aum:1000,perf:15.6,date:"2019-01-01",source:"edgar",founders:"Dan Rasmussen",prior:"Harvard → Bain Capital"},
+  {id:"seed-6",name:"Taula Capital Management",strategy:"macro",aum:6000,perf:null,date:"2024-06-01",source:"edgar",founders:"Diego Megia",prior:"Millennium Management"},
+  {id:"seed-7",name:"Aspect Capital",strategy:"systematic",aum:1200,perf:9.3,date:"1997-01-01",source:"nfa",founders:"Anthony Todd",prior:"AHL / Man Group"},
+  {id:"seed-8",name:"Fort LP",strategy:"systematic",aum:900,perf:11.7,date:"1993-01-01",source:"nfa",founders:"Yves Balcer, Sanjiv Kumar",prior:"Academic — Johns Hopkins"},
+  {id:"seed-9",name:"Chesapeake Capital Corp",strategy:"cta",aum:650,perf:12.1,date:"1988-01-01",source:"nfa",founders:"Jerry Parker",prior:"Richard Dennis / Turtles"},
+  {id:"seed-10",name:"Welton Investment Corp",strategy:"cta",aum:520,perf:7.2,date:"1988-01-01",source:"nfa",founders:"Patrick Welton",prior:"Discretionary trader"},
+  // Merger Arb
+  {id:"seed-11",name:"Pentwater Capital Management",strategy:"merger-arb",aum:4500,perf:8.1,date:"2007-01-01",source:"edgar",founders:"Matthew Halbower",prior:"Stark Investments"},
+  {id:"seed-12",name:"Sculptor Capital Management",strategy:"merger-arb",aum:9000,perf:6.4,date:"1994-01-01",source:"edgar",founders:"Daniel Och",prior:"Goldman Sachs"},
+  {id:"seed-13",name:"Gabelli Funds",strategy:"merger-arb",aum:800,perf:5.9,date:"1977-01-01",source:"edgar",founders:"Mario Gabelli",prior:"Loeb Rhoades"},
+  {id:"seed-14",name:"Westchester Capital Management",strategy:"merger-arb",aum:1100,perf:7.2,date:"1990-01-01",source:"edgar",founders:"Roy Behren, Michael Shannon",prior:"Gabelli Funds"},
+  {id:"seed-15",name:"Water Island Capital",strategy:"merger-arb",aum:1600,perf:6.8,date:"2000-01-01",source:"edgar",founders:"John Orrico",prior:"Bear Stearns"},
+  // Commodity
+  {id:"seed-16",name:"Andurand Capital Management",strategy:"commodity",aum:1800,perf:22.4,date:"2012-01-01",source:"news",founders:"Pierre Andurand",prior:"BlueGold Capital, Goldman Sachs"},
+  {id:"seed-17",name:"Galena Asset Management",strategy:"commodity",aum:700,perf:11.3,date:"2004-01-01",source:"edgar",founders:"Jaime Bejarano",prior:"Trafigura"},
+  {id:"seed-18",name:"Merchant Commodity Fund",strategy:"commodity",aum:600,perf:9.7,date:"2004-01-01",source:"edgar",founders:"Michael Coleman",prior:"Commodities Corp / Goldman Sachs"},
+  {id:"seed-19",name:"Crosby Resource Capital",strategy:"commodity",aum:2000,perf:null,date:"2024-01-01",source:"news",founders:"Robert Crosby",prior:"Citadel (head of agriculture)"},
+  {id:"seed-20",name:"Quantix Commodities",strategy:"commodity",aum:900,perf:13.1,date:"2018-01-01",source:"edgar",founders:"Don Casturo",prior:"Goldman Sachs commodities desk"},
+];
+const SEED_NEWS = [
+  {id:"sn-1",headline:"Tekmerion Capital spinning out of Brevan Howard with $1B, actively fundraising",source:"Business Insider",time:"Feb 25 2026",tag:"#spinout #brevan #systematic",fundRef:"Tekmerion Capital Management"},
+  {id:"sn-2",headline:"Two new Millennium spin-out commodity funds seeking $1.4B combined",source:"Bloomberg",time:"Feb 23 2026",tag:"#spinout #millennium #commodities",fundRef:null},
+  {id:"sn-3",headline:"Agave Capital (ex-Citadel) targets $1B launch with quant macro strategy",source:"Hedgeweek",time:"Jul 2025",tag:"#launch #citadel #macro",fundRef:"Agave Capital Management"},
+  {id:"sn-4",headline:"Taula Capital grows to $6B+, hires ex-Brevan Howard PM Alfredo Saitta",source:"Bloomberg",time:"Jan 2025",tag:"#growth #millennium #macro",fundRef:"Taula Capital Management"},
+  {id:"sn-5",headline:"Deem Global crosses $1B AUM on double-digit returns since 2022 inception",source:"Hedgeweek",time:"Sep 2024",tag:"#emerging #brevan #macro",fundRef:"Deem Global"},
+  {id:"sn-6",headline:"Crosby Resource Capital launches with $2B, founder ex-Citadel head of agriculture",source:"eFinancialCareers",time:"Jan 2024",tag:"#launch #citadel #commodity",fundRef:"Crosby Resource Capital"},
+  {id:"sn-7",headline:"Andurand Capital bets big on energy transition; energy fund up 22% in 2024",source:"Bloomberg",time:"Dec 2024",tag:"#commodity #energy #performance",fundRef:"Andurand Capital Management"},
+  {id:"sn-8",headline:"Merger arbitrage funds see record deal flow as M&A activity surges in 2025",source:"Institutional Inv.",time:"Jan 2025",tag:"#merger-arb #dealflow #mna",fundRef:null},
+  {id:"sn-9",headline:"Water Island Capital raises $400M for new event-driven sleeve",source:"Hedgeweek",time:"Mar 2024",tag:"#merger-arb #event-driven #raise",fundRef:"Water Island Capital"},
+];
+
+// ── API calls ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [fundsRes, newsRes, statusRes] = await Promise.all([
+      fetch(`${API_BASE}/api/funds`),
+      fetch(`${API_BASE}/api/news`),
+      fetch(`${API_BASE}/api/status`),
+    ]);
+    if (!fundsRes.ok) throw new Error('Backend unreachable');
+
+    const fundsData  = await fundsRes.json();
+    const newsData   = await newsRes.json();
+    const statusData = await statusRes.json();
+
+    allFunds  = fundsData.funds;
+    newsItems = newsData.news;
+
+    // Update source status indicators
+    updateSourceDot('edgar', statusData.edgar || 'ok');
+    updateSourceDot('nfa',   statusData.nfa   || 'ok');
+    updateSourceDot('news',  statusData.news  || 'ok');
+    document.getElementById('statusEdgar').textContent = statusData.edgar === 'error' ? 'ERROR' : `${allFunds.filter(f=>f.source==='edgar').length} RESULTS`;
+    document.getElementById('statusNfa').textContent   = statusData.nfa   === 'error' ? 'ERROR' : `${allFunds.filter(f=>f.source==='nfa').length} RESULTS`;
+    document.getElementById('statusNews').textContent  = statusData.news  === 'error' ? 'ERROR' : `${newsItems.length} SIGNALS`;
+
+    if (statusData.last_run) {
+      const d = new Date(statusData.last_run);
+      document.getElementById('lastUpdated').textContent = `UPDATED ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`;
+    }
+
+    document.getElementById('apiBanner').classList.remove('show');
+  } catch (e) {
+    // Backend not running — use seed data with warning
+    allFunds  = SEED_FUNDS;
+    newsItems = SEED_NEWS;
+    document.getElementById('apiBanner').classList.add('show');
+    ['edgar','nfa','news'].forEach(s => {
+      updateSourceDot(s, 'error');
+      document.getElementById(`status${s.charAt(0).toUpperCase()+s.slice(1)}`).textContent = 'OFFLINE';
+    });
+    document.getElementById('lastUpdated').textContent = 'SEED DATA';
+  }
+
+  updateStats();
+  renderTable();
+  renderFeed();
+}
+
+async function triggerRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
+  btn.textContent = '↻ REFRESHING...';
+  try {
+    await fetch(`${API_BASE}/api/refresh`, {method:'POST'});
+    showToast('Refresh triggered — data updating in background');
+    setTimeout(loadData, 4000); // reload after scraper runs
+  } catch {
+    showToast('Backend offline — showing cached data');
+  }
+  setTimeout(() => { btn.classList.remove('loading'); btn.textContent = '↻ REFRESH'; }, 3000);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let funds = allFunds.filter(f => {
+    const matchFilter = currentFilter === 'all' || f.strategy === currentFilter;
+    const matchSearch = !search || f.name.toLowerCase().includes(search) || f.strategy.includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  funds.sort((a,b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (sortCol === 'aum')  { av = av||0; bv = bv||0; }
+    if (sortCol === 'perf') { av = av||-9999; bv = bv||-9999; }
+    if (sortCol === 'date') { av = new Date(av); bv = new Date(bv); }
+    if (av < bv) return sortDir==='asc'?-1:1;
+    if (av > bv) return sortDir==='asc'?1:-1;
+    return 0;
+  });
+
+  if (!funds.length) {
+    document.getElementById('tableBody').innerHTML = `<tr class="loading-row"><td colspan="6" style="color:var(--text3)">NO FUNDS MATCH FILTERS</td></tr>`;
+    return;
+  }
+
+  const sevenDaysAgo = new Date(Date.now() - 7*86400000);
+  document.getElementById('tableBody').innerHTML = funds.map((f,i) => {
+    const isNew = new Date(f.date) > sevenDaysAgo;
+    const aumStr = f.aum ? `$${f.aum>=1000?(f.aum/1000).toFixed(1)+'B':f.aum+'M'}` : '—';
+    const perfStr = f.perf!=null ? `${f.perf>0?'+':''}${f.perf.toFixed(1)}%` : '—';
+    return `<tr onclick="selectFund('${f.id}')" id="row-${f.id}" style="animation-delay:${i*25}ms">
+      <td><div class="fund-name">${f.name}${isNew?'<span class="new-badge">NEW</span>':''}</div><div class="fund-source">${f.source.toUpperCase()}</div></td>
+      <td><span class="badge badge-${f.strategy}">${f.strategy}</span></td>
+      <td><span class="${f.aum?'aum-value':'aum-na'}">${aumStr}</span></td>
+      <td><span class="${f.perf==null?'perf-na':f.perf>=0?'perf-pos':'perf-neg'}">${perfStr}</span></td>
+      <td class="date-cell">${(f.date||'').slice(0,7)}</td>
+      <td><span class="source-tag source-${f.source}">${f.source==='edgar'?'SEC':f.source==='nfa'?'NFA':'NEWS'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function selectFund(id) {
+  selectedFund = allFunds.find(f => f.id === id);
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+  document.getElementById(`row-${id}`)?.classList.add('selected');
+  renderDetail();
+}
+
+function renderDetail() {
+  const f = selectedFund;
+  if (!f) return;
+  const aumStr  = f.aum  ? `$${f.aum>=1000?(f.aum/1000).toFixed(1)+'B':f.aum+'M'}` : 'Not disclosed';
+  const perfStr = f.perf != null ? `${f.perf>0?'+':''}${f.perf.toFixed(1)}% ITD` : 'N/A';
+  document.getElementById('detailPane').innerHTML = `
+    <div class="panel-header">FUND DETAIL</div>
+    <div class="detail-fund-name">${f.name}</div>
+    <div class="detail-meta"><span class="badge badge-${f.strategy}">${f.strategy}</span><span class="source-tag source-${f.source}">${f.source.toUpperCase()}</span></div>
+    <div class="detail-section">
+      <div class="detail-section-title">FUND DATA</div>
+      <div class="detail-row"><span class="detail-key">AUM</span><span class="detail-val highlight">${aumStr}</span></div>
+      <div class="detail-row"><span class="detail-key">Performance (ITD)</span><span class="detail-val ${f.perf==null?'':f.perf>=0?'green':'red'}">${perfStr}</span></div>
+      <div class="detail-row"><span class="detail-key">Reg. Date</span><span class="detail-val">${f.date||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Strategy</span><span class="detail-val">${f.strategy}</span></div>
+    </div>
+    ${f.founders||f.prior ? `<div class="detail-section">
+      <div class="detail-section-title">PEDIGREE</div>
+      ${f.founders?`<div class="detail-row"><span class="detail-key">Founders</span><span class="detail-val">${f.founders}</span></div>`:''}
+      ${f.prior?`<div class="detail-row"><span class="detail-key">Prior Firm</span><span class="detail-val accent">${f.prior}</span></div>`:''}
+    </div>` : ''}
+    <div class="action-btns">
+      ${f.source==='edgar'?`<button class="action-btn primary" onclick="window.open('https://www.sec.gov/cgi-bin/browse-edgar?company=${encodeURIComponent(f.name)}&CIK=&type=ADV&dateb=&owner=include&count=40&search_text=&action=getcompany','_blank')">↗ VIEW SEC EDGAR</button>`:''}
+      ${f.source==='nfa'?`<button class="action-btn primary" onclick="window.open('https://www.nfa.futures.org/BasicNet/','_blank')">↗ VIEW NFA BASIC</button>`:''}
+      <button class="action-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(f.name+' hedge fund')}&tbm=nws','_blank')">⌕ NEWS SEARCH</button>
+    </div>`;
+}
+
+function renderFeed() {
+  document.getElementById('feedCount').textContent = newsItems.length;
+  document.getElementById('feedItems').innerHTML = newsItems.slice(0,20).map(n => `
+    <div class="feed-item" onclick="${n.fundRef?`selectFundByName('${n.fundRef}')`:''}" ${n.url?`ondblclick="window.open('${n.url}','_blank')"`:''}>
+      <div class="feed-item-header"><span class="feed-source" style="color:var(--accent2)">${n.source}</span><span class="feed-time">${n.time}</span></div>
+      <div class="feed-headline">${n.headline}</div>
+      <div class="feed-tag">${n.tag}</div>
+    </div>`).join('');
+}
+
+function selectFundByName(name) {
+  const f = allFunds.find(x => x.name === name);
+  if (f) selectFund(f.id);
+}
+
+function updateStats() {
+  const sevenDaysAgo = new Date(Date.now() - 7*86400000);
+  document.getElementById('statTotal').textContent = allFunds.length;
+  document.getElementById('statNew').textContent   = allFunds.filter(f => new Date(f.date) > sevenDaysAgo).length;
+  document.getElementById('statEdgar').textContent = allFunds.filter(f => f.source==='edgar').length;
+  document.getElementById('statNfa').textContent   = allFunds.filter(f => f.source==='nfa').length;
+  document.getElementById('statNews').textContent  = newsItems.length;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function sortBy(col, th) {
+  sortDir = sortCol===col ? (sortDir==='asc'?'desc':'asc') : 'desc';
+  sortCol = col;
+  document.querySelectorAll('th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
+  th.classList.add(sortDir==='asc'?'sort-asc':'sort-desc');
+  renderTable();
+}
+
+function updateSourceDot(source, state) {
+  const dot = document.getElementById(`dot${source.charAt(0).toUpperCase()+source.slice(1)}`);
+  if (dot) dot.className = `source-dot ${state==='ok'?'ok':state==='error'?'error':'loading'}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// Auto-reload every 15 minutes
+setInterval(loadData, 15 * 60 * 1000);
+loadData();
+</script>
+</body>
+</html>
